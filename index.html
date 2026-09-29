@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPNsense Admin 🛡️</title>
+<meta name="description" content="Your OpenCode agent that only speaks OPNsense. API-first. No raw pfctl, no iptables, no hand-edited firewall configs.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<style>
+:root {
+  --bg: #000;
+  --card: #121a28;
+  --border: #1e2a3a;
+  --text: #e6ecf5;
+  --muted: #8aa0bd;
+  --blue: #4f9cf7;
+  --green: #2ecc8f;
+  --red: #ff5a5f;
+  --gold: #f7b32b;
+  --violet: #a78bfa;
+  --radius: 14px;
+  --glow: 0 0 24px rgba(79, 156, 247, 0.12);
+  --mono: 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace;
+  --sans: 'DejaVu Sans', 'Liberation Sans', sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); margin: 0; padding: 24px; }
+.wrap { max-width: 1280px; margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+header h1 { margin: 0; font-size: 30px; color: #fff; }
+header h1 .bolt { color: var(--gold); }
+header p.sub { color: var(--muted); margin: 8px 0 0; max-width: 640px; line-height: 1.5; }
+.status { display: flex; gap: 10px; align-items: center; }
+.pill { font-family: var(--mono); font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.pill.live { color: var(--green); border-color: var(--green); }
+.btn { font-family: var(--mono); font-size: 13px; color: #fff; background: rgba(79,156,247,0.15); border: 1px solid var(--blue); border-radius: 8px; padding: 8px 14px; text-decoration: none; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi, .panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--glow); }
+.kpi-label { text-transform: uppercase; font-size: 12px; letter-spacing: 0.6px; color: var(--muted); }
+.kpi-value { font-family: var(--mono); font-size: 28px; color: var(--text); margin-top: 6px; }
+.kpi-value .up { color: var(--green); }
+.kpi-delta { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 4px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panel { min-height: 200px; }
+.panel.full { grid-column: 1 / -1; }
+.panel h2 { font-size: 16px; color: #fff; margin: 0 0 4px; }
+.panel .asof { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+.table-wrap th, .table-wrap td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.table-wrap th { color: var(--muted); font-weight: 600; }
+.table-wrap td { color: var(--text); }
+td.refuse { color: var(--red); }
+td.build { color: var(--green); }
+pre { background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; overflow-x: auto; color: var(--text); position: relative; }
+pre .copy { position: absolute; top: 8px; right: 8px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; font-size: 11px; padding: 3px 8px; cursor: pointer; font-family: var(--mono); }
+pre .copy:hover { color: #fff; border-color: var(--blue); }
+ul.tight { margin: 8px 0; padding-left: 20px; line-height: 1.7; font-size: 14px; }
+ul.tight li::marker { color: var(--blue); }
+code.inline { font-family: var(--mono); font-size: 12.5px; background: rgba(79,156,247,0.12); padding: 1px 6px; border-radius: 5px; }
+footer { margin-top: 24px; color: var(--muted); font-size: 12px; font-family: var(--mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer a { color: var(--blue); }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>OPNsense Admin <span class="bolt">🛡️</span></h1>
+    <p class="sub"><strong>Your OpenCode agent that only speaks OPNsense.</strong> No raw <code class="inline">pfctl</code>, no iptables, no hand-edited firewall configs — if it can&rsquo;t go through the OPNsense API into <code class="inline">config.xml</code>, opnsense won&rsquo;t build it that way. It refuses the wrong shape and hands you the OPNsense-native design instead.</p>
+  </div>
+  <div class="status">
+    <span class="pill live">● LIVE</span>
+    <span class="pill">API-first · config.xml</span>
+    <a class="btn" href="https://github.com/stalane/opnsense">★ stalane/opnsense</a>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="kpi-label">opn-* skills</div><div class="kpi-value">6</div><div class="kpi-delta">firewall · vpn · system · services · diagnostics · plugins</div></div>
+  <div class="kpi"><div class="kpi-label">API shape</div><div class="kpi-value">/api/*</div><div class="kpi-delta">module / controller / command · Basic key+secret</div></div>
+  <div class="kpi"><div class="kpi-label">Apply discipline</div><div class="kpi-value"><span class="up">staged → live</span></div><div class="kpi-delta">search → add/set → apply · backup first</div></div>
+  <div class="kpi"><div class="kpi-label">Docs stance</div><div class="kpi-value"><span class="up">verified</span></div><div class="kpi-delta">endpoints checked vs docs.opnsense.org</div></div>
+</section>
+
+<div class="grid">
+
+<section class="panel full">
+  <h2>🔌 API shape: one base, every plane</h2>
+  <div class="asof">GET retrieves · POST mutates/executes · JSON bodies · per-user effective privileges · <a href="https://docs.opnsense.org/development/api.html">docs.opnsense.org/development/api.html</a></div>
+  <div class="table-wrap"><table>
+    <tr><th>Plane</th><th>Modules</th></tr>
+    <tr><td>firewall</td><td class="build">filter (rules + apply) · alias (+ GeoIP/URL tables) · source_nat · d_nat · one_to_one · npt · filter_util/rule_stats</td></tr>
+    <tr><td>vpn</td><td class="build">ipsec · openvpn · wireguard — instances, peers, keys, status</td></tr>
+    <tr><td>system</td><td class="build">firmware · core (services/backups) · auth · trust (certs) · routes/routing · HA/CARP</td></tr>
+    <tr><td>services</td><td class="build">unbound (+DNSBL) · kea/dnsmasq/dhcrelay · ids (Suricata) · monit · ntpd · syslog · trafficshaper</td></tr>
+    <tr><td>diagnostics</td><td class="build">diagnostics (ping/capture/lookup) · syslog files · core/service · Insight/NetFlow · health graphs</td></tr>
+    <tr><td>plugins</td><td class="build">haproxy · caddy · acmeclient · crowdsec · tailscale/zerotier · telegraf/nodeexporter</td></tr>
+  </table></div>
+<pre><button class="copy" data-copy="b0">copy</button><code id="b0">export OPN_HOST=fw.example.com OPN_KEY=&lt;key&gt; OPN_SECRET=&lt;secret&gt;
+curl -s -u "$OPN_KEY:$OPN_SECRET" \
+  "https://$OPN_HOST/api/firewall/filter/searchRule" \
+  -d '{"current":1,"rowCount":25,"sort":{},"searchPhrase":""}'</code></pre>
+</section>
+
+<section class="panel">
+  <h2>🛠 Skill router</h2>
+  <div class="asof">one plane per skill · thin files, heavy reuse</div>
+  <div class="table-wrap"><table>
+    <tr><th>Skill</th><th>Plane</th></tr>
+    <tr><td>opn-firewall</td><td>filter rules · aliases · NAT · apply flow</td></tr>
+    <tr><td>opn-vpn</td><td>IPsec · OpenVPN · WireGuard</td></tr>
+    <tr><td>opn-system</td><td>firmware · backups · users/keys · HA · certs</td></tr>
+    <tr><td>opn-services</td><td>Unbound · DHCP · IDS/IPS · Monit · NTP</td></tr>
+    <tr><td>opn-diagnostics</td><td>health · logs · NetFlow · capture · triage</td></tr>
+    <tr><td>opn-plugins</td><td>HAProxy · Caddy · ACME · CrowdSec · mesh</td></tr>
+  </table></div>
+</section>
+
+<section class="panel">
+  <h2>⛔ Hard rule: OPNsense-only</h2>
+  <div class="asof">refuse the shape, redirect to the equivalent</div>
+  <div class="table-wrap"><table>
+    <tr><th>Asked for</th><th>Built instead</th></tr>
+    <tr><td class="refuse">Raw pfctl / pf.conf edits</td><td class="build">firewall/filter + alias via API</td></tr>
+    <tr><td class="refuse">iptables / nftables</td><td class="build">firewall/filter rules + apply</td></tr>
+    <tr><td class="refuse">Manual NAT scripts</td><td class="build">source_nat / d_nat / 1:1 / NPT</td></tr>
+    <tr><td class="refuse">Hand-rolled VPN configs</td><td class="build">wireguard / openvpn / ipsec modules</td></tr>
+    <tr><td class="refuse">Cron scripts poking pf</td><td class="build">core/cron + configd actions</td></tr>
+    <tr><td class="refuse">External DNS/DHCP boxes</td><td class="build">unbound / kea / dnsmasq on-box</td></tr>
+    <tr><td class="refuse">Reverse-proxy VPS</td><td class="build">haproxy / caddy plugins</td></tr>
+  </table></div>
+</section>
+
+<section class="panel full">
+  <h2>⬇ Install into your harness</h2>
+  <div class="asof">OpenCode · an OPNsense firewall with an API key (System ‣ Access ‣ Users)</div>
+<pre><button class="copy" data-copy="b1">copy</button><code id="b1">cp agent/opnsense.md ~/.config/opencode/agents/
+cp -r skills/* ~/.config/opencode/skills/</code></pre>
+  <ul class="tight">
+    <li>Restart OpenCode, verify with <code class="inline">opencode agent list</code> (expect <code class="inline">opnsense</code>).</li>
+    <li>Host / key / secret travel per command as env vars — never stored in the repo, never logged.</li>
+    <li>Safety default: <code class="inline">search</code> → stage → <code class="inline">apply</code>, <code class="inline">config.xml</code> backup before mutating sessions, confirm before production <code class="inline">apply</code>.</li>
+  </ul>
+</section>
+
+<section class="panel full">
+  <h2>✔ Verification record</h2>
+  <div class="asof">measured, not claimed</div>
+  <ul class="tight">
+    <li><strong>API shapes verified 29 Sep 2026</strong> — firewall plane (<code class="inline">filter/searchRule/addRule/setRule/delRule/toggleRule/apply</code>, <code class="inline">alias/*</code>, NAT controllers, <code class="inline">filter_util/rule_stats</code>) read against the live API reference; all other planes cite module/controller names from the same reference, parameters copied from GUI <code class="inline">/api/</code> traffic.</li>
+    <li><strong>Unknown-parameter rule banked:</strong> repeat the action in the GUI with devtools open, copy the <code class="inline">/api/</code> request verbatim — never invent model fields.</li>
+    <li><strong>Gotchas banked:</strong> staged writes are not live before <code class="inline">apply</code>/<code class="inline">reconfigure</code>; automation-namespace rules are separate from core GUI rules; <code class="inline">curl -k</code> is lab-only.</li>
+  </ul>
+</section>
+
+</div>
+
+<footer>
+  <span>opnsense.stalane.com · 29 Sep 2026 · served from Cloudflare Pages</span>
+  <span><a href="https://github.com/stalane/opnsense">github.com/stalane/opnsense</a> · MIT · no firewall data on this page</span>
+</footer>
+
+</div>
+<script>
+document.querySelectorAll('button.copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var t = document.getElementById(b.getAttribute('data-copy')).innerText;
+    navigator.clipboard.writeText(t).then(function () { b.innerText = 'copied'; });
+  });
+});
+</script>
+</body>
+</html>
